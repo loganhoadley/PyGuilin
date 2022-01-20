@@ -2,9 +2,19 @@
 #show() needs to be called in order to explicitly draw the generated plot in the IDE
 #matplotlib.pyplot.ion() enables interactive mode, which should serve the final product
 
-import seaborn as sns
-import matplotlib as plt
+#import seaborn as sns
+#import matplotlib as plt
+import tkinter as tk
+from tkinter import filedialog
+import csv
 
-df= sns.load_dataset('penguins')
-sns.pairplot(df, hue="species")
-plt.pyplot.show()
+root = tk.Tk()
+root.withdraw()
+file_path = filedialog.askopenfilename()
+with open(file_path, newline='') as csvfile:
+    reader= csv.reader(csvfile)
+    for row in reader:
+        print(', '.join(row))
+
+
+
