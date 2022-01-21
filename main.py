@@ -11,10 +11,16 @@ import csv
 root = tk.Tk()
 root.withdraw()
 file_path = filedialog.askopenfilename()
+
 with open(file_path, newline='') as csvfile:
+    header = csvfile.readline()
+    print(header)
+    headerlist = header.split(',')
     reader= csv.reader(csvfile)
     for row in reader:
         print(', '.join(row))
 
-
+print(headerlist)
+print(len(headerlist))
+print(headerlist[4])
 
