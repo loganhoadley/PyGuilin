@@ -19,10 +19,11 @@ with open(file_path, newline='') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
         data.append(row)
-#data is now loaded
+# data is now loaded
 
-#print(headerList)
+# print(headerList)
 print(headerList[4])
 print(data[1][0])
-# access in 2d array, 1st element is the row of the CSV, 2nd element is the index of the precise entry, or use one elment for the whole row
+# access in 2d array, 1st element is the row of the CSV, 2nd element is
+# the index of the precise entry, or use one element for the whole row
 
