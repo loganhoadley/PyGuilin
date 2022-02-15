@@ -2,27 +2,59 @@
 from tkinter import filedialog
 import tkinter as tk
 import csv
-# import seaborn as sns
-# import matplotlib as plt
+import seaborn as sns
+import numpy as np
+import pandas as pd
+
+import matplotlib as plt
+
+sns.set_theme(color_codes=True)
 
 from tkinter import *
 
-headerlist = ["sample"]
+headerlist = ["sample",
+              "sample2",
+              "sample 3"]
 data = []
 
 
 def openfile():
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
-    with open(filepath, newline='') as csvfile:
-        data = []
-        header = csvfile.readline()
-        headerlist = header.split(',')
-        reader = csv.reader(csvfile)
-        for row in reader:
-            data.append(row)
-    print(headerlist)  # prints headerlist as it exists when created from .csv
-    print(data[1][0])  # 2nd column timestamp for debug purposes
+    csv = pd.read_csv(filepath)
+    #with open(filepath, newline='') as csvfile:
+    #    data = []
+    #    header = csvfile.readline()
+    #    headerlist = header.split(',')
+    #    data.append(header)
+    #    reader = csv.reader(csvfile)
+    #    for row in reader:
+    #        data.append(row)
+    count = 0
+    headers = list(csv.columns)
+
+    for col_name in csv.columns:
+        count=count+1
+        print(count, "--", col_name)
+        #headers.append(col_name)
+
+    #for n in headerlist:
+    #    count = count + 1
+    #    print(count, "--", n)  # prints headerlist as it exists when created from .csv
+
+    arg1 = input("Select argument 1: ")
+    arg2 = input("Select argument 2: ")
+    arg1 = int(arg1)
+    arg2 = int(arg2)
+
+    arg1title = headers[arg1-1]
+    arg2title = headers[arg2-1]
+    print(arg1title)
+    print(arg2title)
+    #dataset = np.array(data)
+    #print(dataset)
+    sns.displot(csv, x=arg1title, y=arg2title)
+    plt.pyplot.show()
 
 
 # maybe just build a window in this open function that contains the graph,
@@ -42,7 +74,7 @@ def show():
 clicked = StringVar()
 clicked.set("Parameter 1")
 
-drop = OptionMenu(root, clicked, headerlist)
+drop = OptionMenu(root, clicked, *headerlist)
 drop.pack()
 
 main_menu = tk.Menu(root)
