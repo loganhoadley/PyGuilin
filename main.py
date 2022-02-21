@@ -5,56 +5,53 @@ import csv
 import seaborn as sns
 import numpy as np
 import pandas as pd
-
 import matplotlib as plt
+from functools import partial
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 sns.set_theme(color_codes=True)
 
 from tkinter import *
 
-headerlist = ["sample",
-              "sample2",
-              "sample 3"]
+headerlist = ["sample" ]
 data = []
+plt.pyplot.ion()
 
+
+def graph(file, arg1, arg2):
+    sns.displot(file, x=arg1, y=arg2)
+    plt.pyplot.show()
+      #graph =
+      #graphic = FigureCanvasTkAgg(graph, graphwindow)
+      #graphic.get_tk_widget().pack(side=LEFT, fill=BOTH)
 
 def openfile():
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
     csv = pd.read_csv(filepath)
-    #with open(filepath, newline='') as csvfile:
-    #    data = []
-    #    header = csvfile.readline()
-    #    headerlist = header.split(',')
-    #    data.append(header)
-    #    reader = csv.reader(csvfile)
-    #    for row in reader:
-    #        data.append(row)
-    count = 0
     headers = list(csv.columns)
 
-    for col_name in csv.columns:
-        count=count+1
-        print(count, "--", col_name)
-        #headers.append(col_name)
+    graphwindow=Toplevel(root)
+    graphwindow.geometry("500x400")
+    graphwindow.title(filepath)
+    buttonframe = Frame(graphwindow)
+    buttonframe.pack(side=LEFT)
+    clicked1 = StringVar()
+    clicked1.set("Parameter 1")
+    clicked2 = StringVar()
+    clicked2.set("Parameter 2")
+    windowframe = Frame(graphwindow)
+    windowframe.pack(side=RIGHT)
+    drop1 = OptionMenu(buttonframe, clicked1, *headers)
+    drop1.pack(side=BOTTOM)
+    drop2 = OptionMenu(buttonframe, clicked2, *headers)
+    drop2.pack(side=BOTTOM)
 
-    #for n in headerlist:
-    #    count = count + 1
-    #    print(count, "--", n)  # prints headerlist as it exists when created from .csv
+    graphbutton = Button(buttonframe, text= "Generate", command = lambda: graph(csv, clicked1.get(), clicked2.get()))
+    graphbutton.pack(side=BOTTOM)
 
-    arg1 = input("Select argument 1: ")
-    arg2 = input("Select argument 2: ")
-    arg1 = int(arg1)
-    arg2 = int(arg2)
-
-    arg1title = headers[arg1-1]
-    arg2title = headers[arg2-1]
-    print(arg1title)
-    print(arg2title)
-    #dataset = np.array(data)
-    #print(dataset)
-    sns.displot(csv, x=arg1title, y=arg2title)
-    plt.pyplot.show()
+    #  sns.displot(csv, x=clicked1, y=clicked2)
+    #  plt.pyplot.show()
 
 
 # maybe just build a window in this open function that contains the graph,
@@ -65,21 +62,8 @@ def openfile():
 
 root = tk.Tk()
 root.title("PyGuilin Dev Build")
-
-
-def show():
-    label.config(text=clicked.get())
-
-#sample
-
-clicked = StringVar()
-clicked.set("Parameter 1")
-
-drop = OptionMenu(root, clicked, *headerlist)
-drop.pack()
-
 main_menu = tk.Menu(root)
-
+root.geometry("350x200")
 root.config(menu=main_menu)
 file_menu = tk.Menu(main_menu, tearoff=0)
 main_menu.add_cascade(label='File', menu=file_menu)
