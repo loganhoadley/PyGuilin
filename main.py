@@ -70,6 +70,7 @@ root.title("PyGuilin Dev Build")
 def show():
     label.config(text=clicked.get())
 
+#sample
 
 clicked = StringVar()
 clicked.set("Parameter 1")
@@ -91,3 +92,5 @@ label = Label(root, text=" ")
 label.pack()
 
 root.mainloop()
+
+
