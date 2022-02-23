@@ -1,17 +1,12 @@
 # matplotlib.pyplot.ion() enables interactive mode, which should serve the final product
 from tkinter import filedialog
 import tkinter as tk
-import csv
 import seaborn as sns
-import numpy as np
 import pandas as pd
 import matplotlib as plt
-from functools import partial
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-sns.set_theme(color_codes=True)
-
 from tkinter import *
+import numpy as np
+sns.set_theme(color_codes=True)
 
 headerlist = ["sample" ]
 data = []
@@ -19,20 +14,24 @@ plt.pyplot.ion()
 
 
 def graph(file, arg1, arg2):
-    sns.displot(file, x=arg1, y=arg2)
+    sns.regplot(x=arg1, y=arg2, data=file)
+
     plt.pyplot.show()
-      #graph =
-      #graphic = FigureCanvasTkAgg(graph, graphwindow)
-      #graphic.get_tk_widget().pack(side=LEFT, fill=BOTH)
+    #  graph =
+    #  graphic = FigureCanvasTkAgg(graph, graphwindow)
+    #  graphic.get_tk_widget().pack(side=LEFT, fill=BOTH)
+
 
 def openfile():
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
     csv = pd.read_csv(filepath)
     headers = list(csv.columns)
+    if firstrun:
+        startlabel.pack_forget()
 
     graphwindow=Toplevel(root)
-    graphwindow.geometry("500x400")
+    graphwindow.geometry("750x400")
     graphwindow.title(filepath)
     buttonframe = Frame(graphwindow)
     buttonframe.pack(side=LEFT)
@@ -43,15 +42,15 @@ def openfile():
     windowframe = Frame(graphwindow)
     windowframe.pack(side=RIGHT)
     drop1 = OptionMenu(buttonframe, clicked1, *headers)
-    drop1.pack(side=BOTTOM)
+    drop1.pack(side=TOP)
     drop2 = OptionMenu(buttonframe, clicked2, *headers)
-    drop2.pack(side=BOTTOM)
-
+    drop2.pack(side=TOP)
+    sliderlabel = Label(buttonframe, text="Width deviation limit in\n hundredths of millimeters: ")
+    sliderlabel.pack(side=TOP)
+    slider=Scale(buttonframe, from_=0, to=500, orient=HORIZONTAL)
+    slider.pack(side=TOP)
     graphbutton = Button(buttonframe, text= "Generate", command = lambda: graph(csv, clicked1.get(), clicked2.get()))
     graphbutton.pack(side=BOTTOM)
-
-    #  sns.displot(csv, x=clicked1, y=clicked2)
-    #  plt.pyplot.show()
 
 
 # maybe just build a window in this open function that contains the graph,
@@ -71,9 +70,9 @@ file_menu.add_command(label='Open', command=openfile)
 file_menu.add_command(label="Export as...")
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=root.quit)
-
-label = Label(root, text=" ")
-label.pack()
+firstrun=True
+startlabel = Label(root, text="Select File --> Open and select a valid CSV")
+startlabel.pack()
 
 root.mainloop()
 
