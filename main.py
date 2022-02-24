@@ -5,10 +5,9 @@ import seaborn as sns
 import pandas as pd
 import matplotlib as plt
 from tkinter import *
-import numpy as np
 sns.set_theme(color_codes=True)
 
-headerlist = ["sample" ]
+headerlist = ["sample"]
 data = []
 plt.pyplot.ion()
 
@@ -17,6 +16,7 @@ def graph(file, arg1, arg2):
     sns.regplot(x=arg1, y=arg2, data=file)
 
     plt.pyplot.show()
+    #  need this method to be superseded
     #  graph =
     #  graphic = FigureCanvasTkAgg(graph, graphwindow)
     #  graphic.get_tk_widget().pack(side=LEFT, fill=BOTH)
@@ -27,10 +27,10 @@ def openfile():
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
     csv = pd.read_csv(filepath)
     headers = list(csv.columns)
-    if firstrun:
-        startlabel.pack_forget()
+    if firstRun:
+        startLabel.pack_forget()
 
-    graphwindow=Toplevel(root)
+    graphwindow = Toplevel(root)
     graphwindow.geometry("750x400")
     graphwindow.title(filepath)
     buttonframe = Frame(graphwindow)
@@ -47,9 +47,9 @@ def openfile():
     drop2.pack(side=TOP)
     sliderlabel = Label(buttonframe, text="Width deviation limit in\n hundredths of millimeters: ")
     sliderlabel.pack(side=TOP)
-    slider=Scale(buttonframe, from_=0, to=500, orient=HORIZONTAL)
+    slider = Scale(buttonframe, from_=0, to=500, orient=HORIZONTAL)
     slider.pack(side=TOP)
-    graphbutton = Button(buttonframe, text= "Generate", command = lambda: graph(csv, clicked1.get(), clicked2.get()))
+    graphbutton = Button(buttonframe, text="Generate", command=lambda: graph(csv, clicked1.get(), clicked2.get()))
     graphbutton.pack(side=BOTTOM)
 
 
@@ -70,10 +70,8 @@ file_menu.add_command(label='Open', command=openfile)
 file_menu.add_command(label="Export as...")
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=root.quit)
-firstrun=True
-startlabel = Label(root, text="Select File --> Open and select a valid CSV")
-startlabel.pack()
+firstRun = True
+startLabel = Label(root, text="Select File --> Open and select a valid CSV")
+startLabel.pack()
 
 root.mainloop()
-
-
