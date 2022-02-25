@@ -10,36 +10,19 @@ sns.set_theme(color_codes=True)
 headerlist = ["sample"]
 data = []
 plt.pyplot.ion()
+global csv
+firstRun = True
 
-
-def graph(file, arg1, arg2):
-    sns.regplot(x=arg1, y=arg2, data=file)
-
-    plt.pyplot.show()
-    #  need this method to be superseded
-    #  graph =
-    #  graphic = FigureCanvasTkAgg(graph, graphwindow)
-    #  graphic.get_tk_widget().pack(side=LEFT, fill=BOTH)
-
-
-def openfile():
-    filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
-                                          filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
-    csv = pd.read_csv(filepath)
-    headers = list(csv.columns)
-    if firstRun:
-        startLabel.pack_forget()
-
-    graphwindow = Toplevel(root)
-    graphwindow.geometry("750x400")
-    graphwindow.title(filepath)
-    buttonframe = Frame(graphwindow)
+def draw():
+    global windowframe, buttonframe
+    root.title(filepath)
+    buttonframe = Frame(root)
     buttonframe.pack(side=LEFT)
     clicked1 = StringVar()
     clicked1.set("Parameter 1")
     clicked2 = StringVar()
     clicked2.set("Parameter 2")
-    windowframe = Frame(graphwindow)
+    windowframe = Frame(root)
     windowframe.pack(side=RIGHT)
     drop1 = OptionMenu(buttonframe, clicked1, *headers)
     drop1.pack(side=TOP)
@@ -53,16 +36,38 @@ def openfile():
     graphbutton.pack(side=BOTTOM)
 
 
-# maybe just build a window in this open function that contains the graph,
-# having the options for selection show up in the new window
-# have the main window maybe contain some documentation and guiding the user? I'm not sure exactly how to get tkinter
-# to behave in the way I want, I'll play around with the order
+def undraw():
+    windowframe.pack_forget()
+    buttonframe.pack_forget()
 
+
+
+def graph(file, arg1, arg2):
+    sns.regplot(x=arg1, y=arg2, data=file)
+    plt.pyplot.show()
+    #  need this method to be superseded
+    #  graph =
+    #  graphic = FigureCanvasTkAgg(graph, graphwindow)
+    #  graphic.get_tk_widget().pack(side=LEFT, fill=BOTH)
+
+
+def openfile():
+    global filepath, headers, firstRun, csv
+    filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
+                                          filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
+    csv = pd.read_csv(filepath)
+    headers = list(csv.columns)
+    if firstRun:
+        startLabel.pack_forget()
+        firstRun=False
+    else:
+        undraw()
+    draw()
 
 root = tk.Tk()
 root.title("PyGuilin Dev Build")
 main_menu = tk.Menu(root)
-root.geometry("350x200")
+root.geometry("500x800")
 root.config(menu=main_menu)
 file_menu = tk.Menu(main_menu, tearoff=0)
 main_menu.add_cascade(label='File', menu=file_menu)
@@ -70,7 +75,6 @@ file_menu.add_command(label='Open', command=openfile)
 file_menu.add_command(label="Export as...")
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=root.quit)
-firstRun = True
 startLabel = Label(root, text="Select File --> Open and select a valid CSV")
 startLabel.pack()
 
