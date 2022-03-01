@@ -8,7 +8,7 @@ from tkinter import *
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 sns.set_theme(color_codes=True)
-
+from filehandle import filedetermine,filecorrect
 
 
 def openfile():
@@ -16,15 +16,21 @@ def openfile():
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
     csv = pd.read_csv(filepath)
+    formatted=filedetermine(csv)
+    if not formatted:
+        filecorrect(csv)
+        print("Done.")
+        return
     headers = list(csv.columns)
     if firstRun:
         startLabel.pack_forget()
-        firstRun=False
+        firstRun = False
     else:
         undraw()
     draw()
 
-#creates the buttons and visual elements necessary for interaction.
+
+# creates the buttons and visual elements necessary for interaction.
 def draw():
     global windowframe, buttonframe
     root.title(filepath)
@@ -49,12 +55,14 @@ def draw():
     graphbutton = Button(buttonframe, text="Generate", command=lambda: graph(csv, clicked1.get(), clicked2.get(), limit.get()))
     graphbutton.pack(side=BOTTOM)
 
-#clears the frame when a new file is opened. called only after the first file is opened.
+
+# clears the frame when a new file is opened. called only after the first file is opened.
 def undraw():
     windowframe.pack_forget()
     buttonframe.pack_forget()
 
-#graphs
+
+# graphs
 def graph(file, arg1, arg2,arg3):
     global canvas
     graphwindow=Toplevel(height=900, width=1000)
@@ -67,17 +75,17 @@ def graph(file, arg1, arg2,arg3):
     button = tk.Button(graphwindow, text="Quit", command=graphwindow.destroy)
     button.pack()
 
-    # creates a figure containing the graph, type figure
+
+# creates a figure containing the graph, type figure
 def create_figure(file, arg1, arg2):
     f, dummy = plt.subplots(figsize=(6,6))
     sns.regplot(x=arg1, y=arg2, data=file)
     return f
 
-#Main begins here
-#plt.pyplot.ion()
-global csv
-firstRun = True
 
+# Main begins here
+# plt.pyplot.ion()
+firstRun = True
 root = tk.Tk()
 root.title("PyGuilin Dev Build")
 main_menu = tk.Menu(root)
