@@ -4,7 +4,6 @@ from datetime import datetime
 # ie did it come from pi vision or was it hand-made
 
 def filedetermine(file):
-    print(file.columns[0])
     if file.columns[0] == "Data Source":
         return False
     else:
@@ -38,10 +37,13 @@ def filecorrect(file):
                 file.loc[i, 'Time'] = sourcestamp.isoformat(sep=' ', timespec='seconds')
             except ValueError:
                 file.loc[i, 'Time'] = correctTimestamp(file.loc[i, 'Time'])
+    print("header:")
+    print(file.columns)
+    print("data at index 0")
+    print(file.loc[1])
 
-
-    print(file.loc[i, 'Time'])
-    file=file.groupby(file.index).sum()
-    print(file)
+    #print(file.loc[i, 'Time'])
+    #file = file.groupby(file.index).sum()
+    #print(file)
     #df2 = file.pivot(index='Time', columns='Data Source', values='Value')
     #print(df2)

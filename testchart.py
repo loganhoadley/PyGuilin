@@ -1,14 +1,61 @@
+# seaborn in matplotlib - tkinter doesn't need it
+#import matplotlib
+#matplotlib.use('TkAgg')
+
+
+import tkinter
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# seaborn example
+from string import ascii_letters
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
 
-sns.set_theme(style="darkgrid")
+def create_plot():
+    sns.set(style="white")
 
-tips = sns.load_dataset("tips")
-sns.relplot(x="total_bill", y="tip", data=tips)
-plt.show()
+    # Generate a large random dataset
+    rs = np.random.RandomState(33)
+    d = pd.DataFrame(data=rs.normal(size=(100, 26)),
+                     columns=list(ascii_letters[26:]))
 
-penguins = sns.load_dataset("penguins")
-sns.histplot(data=penguins, x="flipper_length_mm", hue="species", multiple="stack")
-plt.show()
+    # Compute the correlation matrix
+    corr = d.corr()
+
+    # Generate a mask for the upper triangle
+    mask = np.zeros_like(corr, dtype=np.bool)
+    mask[np.triu_indices_from(mask)] = True
+
+    # Set up the matplotlib figure
+    f, ax = plt.subplots(figsize=(6))
+
+    # Generate a custom diverging colormap
+    cmap = sns.diverging_palette(220, 10, as_cmap=True)
+
+    # Draw the heatmap with the mask and correct aspect ratio
+    sns.heatmap(corr, mask=mask, cmap=cmap, vmax=.3, center=0,
+                square=True, linewidths=.5, cbar_kws={"shrink": .5})
+    print(type(f))
+    return f
+
+# --- main ---
+
+root = tkinter.Tk()
+root.wm_title("Embedding in Tk")
+
+label = tkinter.Label(root, text="Matplotlib with Seaborn in Tkinter")
+label.pack()
+
+fig = create_plot()
+print(type(fig))
+
+canvas = FigureCanvasTkAgg(fig, master=root)  # A tk.DrawingArea.
+canvas.draw()
+canvas.get_tk_widget().pack()
+
+button = tkinter.Button(root, text="Quit", command=root.destroy)
+button.pack()
+
+tkinter.mainloop()
