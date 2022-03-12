@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+import csv
 # determines if the file is formatted in wide format or not,
 # ie did it come from pi vision or was it hand-made
 
@@ -47,3 +48,36 @@ def filecorrect(file):
     #print(file)
     #df2 = file.pivot(index='Time', columns='Data Source', values='Value')
     #print(df2)
+
+def LongToWide(input_file):
+    # Dictionary to store csv data in
+    wide_data = {}
+    # List to store all the data sources for headers
+    sources = ['Time']
+    with open(input_file, encoding='utf-8-sig') as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            if row['Time'] != '':
+                try:
+                    time_stamp = datetime.fromisoformat(row['Time'])
+                    time_stamp = time_stamp.isoformat(sep=' ', timespec='seconds')
+                except ValueError:
+                    time_stamp = correctTimestamp(row['Time'])
+                source = row['Data Source']
+                value = row['Value']
+                source = source.rpartition('\\')[-1]
+                if source not in sources:
+                    sources.append(source)
+                if time_stamp not in wide_data:
+                    wide_data[time_stamp] = {'Time': time_stamp, source: value}
+                else:
+                    wide_data[time_stamp][source] = value
+    with open('test.csv', 'w', newline='') as output_file:
+        writer = csv.DictWriter(output_file, fieldnames=sources)
+        # Headers are defined at the beginning of the script.
+        writer.writeheader()
+        # This takes each dictionary entry, which is itself a dictionary, and writes the values to the CSV file.
+        for key in wide_data:
+            writer.writerow(wide_data[key])
+
+LongToWide("Extruder_Temp.csv")
