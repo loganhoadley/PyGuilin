@@ -7,19 +7,20 @@ import matplotlib.pyplot as plt
 from tkinter import *
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
-from filehandle import filedetermine, filecorrect
-
+from file_handler import is_wide_form, file_correct
+# TODO: Needs to be cleaned up to conform to PEP-8 Standards.
 sns.set_theme(color_codes=True)
 
 
 def openfile():
+    # TODO: Retool this to utilize long_to_wide().
     global filepath, headers, firstRun, csv
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
     csv = pd.read_csv(filepath)
-    formatted = filedetermine(csv)
+    formatted = is_wide_form(csv)
     if not formatted:
-        filecorrect(csv)
+        file_correct(csv)
         print("Done.")
         return
     headers = list(csv.columns)
