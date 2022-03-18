@@ -38,6 +38,7 @@ def correct_timestamp(timestamp):
         return datetime_timestamp.isoformat(sep=' ', timespec='seconds')
     # If there still aren't enough digits, recurse.
     except ValueError:
+        timestamp = timestamp + "0"
         return correct_timestamp(timestamp)
 
 
@@ -128,4 +129,4 @@ def long_to_wide(input_file):
                 # If value exists at this location, update last known value.
                 else:
                     last_known_values[s] = wide_data[key][s]
-    return wide_data
+    return wide_data, sources
