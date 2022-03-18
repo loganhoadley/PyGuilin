@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 from tkinter import *
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
+from filehandle import filedetermine, filecorrect
+
 sns.set_theme(color_codes=True)
-from filehandle import filedetermine,filecorrect
 
 
 def openfile():
@@ -16,7 +17,7 @@ def openfile():
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
     csv = pd.read_csv(filepath)
-    formatted=filedetermine(csv)
+    formatted = filedetermine(csv)
     if not formatted:
         filecorrect(csv)
         print("Done.")
@@ -46,45 +47,89 @@ def draw():
     drop1.pack(side=TOP)
     drop2 = OptionMenu(buttonframe, clicked2, *headers)
     drop2.pack(side=TOP)
-    sliderlabel = Label(buttonframe, text="Width deviation limit in\n hundredths of millimeters: ")
+    sliderlabel = Label(buttonframe, text="Width deviation limit in\n tenths of millimeters: ")
     sliderlabel.pack(side=TOP)
-    limit=DoubleVar()
+    limit = DoubleVar()
+    robust = BooleanVar()
+    robust.set(False)
+    order = IntVar()
+    order.set(1)
 
     slider = Scale(buttonframe, from_=0, to=75, orient=HORIZONTAL, variable=limit)
     slider.pack(side=TOP)
-    graphbutton = Button(buttonframe, text="Generate", command=lambda: graph(csv, clicked1.get(), clicked2.get(), limit.get()))
+    # maybe replace sider with an input field, so user can just type in a value
+    # add: button or tickbox to graph 2nd order
+    # add: entry for confidence interval
+
+    robustcheck = tk.Checkbutton(buttonframe, text="Robust Analysis", variable=robust, onvalue=True, offvalue=False)
+    robustcheck.pack(side=TOP)
+    graphbutton = Button(buttonframe, text="Generate", command=lambda: graph(csv, clicked1.get(),
+                                                                             clicked2.get(), limit.get(), robust.get(), order.get()))
     graphbutton.pack(side=BOTTOM)
+    outlierbutton = Button(buttonframe, text="Graph Outliers", command=lambda: graph_outliers(csv, clicked1.get(),
+                                                                             clicked2.get(), order.get()))
+    outlierbutton.pack(side=BOTTOM)
+    Strucbutton1 = Radiobutton(buttonframe, text="Linear Approximation", variable=order, value=1)
+    Strucbutton1.pack()
+    Strucbutton2 = Radiobutton(buttonframe, text="Quadratic Approximation", variable=order, value=2)
+    Strucbutton2.pack()
+    loggraph = Radiobutton(buttonframe, text="Logarithmic Approximation", variable=order, value=999)
+    loggraph.pack()
 
-
-# clears the frame when a new file is opened. called only after the first file is opened.
+# clears the frame when a new file is opened. called only after the first file is opened
+# as options need to be updated with each new file.
 def undraw():
     windowframe.pack_forget()
     buttonframe.pack_forget()
 
 
-# graphs
-def graph(file, arg1, arg2,arg3):
+# builds a window, canvas within the window, and calls
+# create_figure() with relevant parameters to populate canvas.
+def graph(file, xval, yval, limit, robust, order):
     global canvas
-    graphwindow=Toplevel(height=900, width=1000)
-    fig = create_figure(file, arg1, arg2)
-    if arg3 != 0:
-        plt.axhline(y=(arg3/1000),color='r',linestyle='-')
+    graphwindow = Toplevel(height=900, width=1000)
+    if order > 500:
+        log=True
+        order = 1
+    else:
+        log=False
+    fig = create_figure(file, xval, yval, robust, order, log)
+    if limit != 0:
+        plt.axhline(y=(limit / 1000), color='r', linestyle='-')
     canvas = FigureCanvasTkAgg(fig, master=graphwindow)
     canvas.draw()
     canvas.get_tk_widget().pack()
-    button = tk.Button(graphwindow, text="Quit", command=graphwindow.destroy)
+    button = tk.Button(graphwindow, text="Close", command=graphwindow.destroy)
     button.pack()
 
 
 # creates a figure containing the graph, type figure
-def create_figure(file, arg1, arg2):
-    f, dummy = plt.subplots(figsize=(6,6))
-    sns.regplot(x=arg1, y=arg2, data=file)
+def create_figure(file, xaxis, yaxis, robust, order, log):
+    f, dummy = plt.subplots(figsize=(6, 6))
+    sns.regplot(x=xaxis, y=yaxis, data=file, robust=robust, order=order, logx=log)
+    return f
+
+def graph_outliers(file, xaxis, yaxis, order):
+    graphwindow = Toplevel(height=900, width=1000)
+    if order > 500:
+        order = 1
+
+    fig = outlier_figure(file, xaxis, yaxis, order)
+    canvas = FigureCanvasTkAgg(fig, master=graphwindow)
+    canvas.draw()
+    canvas.get_tk_widget().pack()
+    button = tk.Button(graphwindow, text="Close", command=graphwindow.destroy)
+    button.pack()
+
+
+def outlier_figure(file, xaxis, yaxis, order):
+    f, dummy = plt.subplots(figsize=(6, 6))
+    sns.residplot(x=xaxis, y=yaxis, data=file, lowess=True, order=order)
     return f
 
 
 # Main begins here
-# plt.pyplot.ion()
+# plt.pyplot.ion() for interactive mode, may want to investigate
 firstRun = True
 root = tk.Tk()
 root.title("PyGuilin Dev Build")
