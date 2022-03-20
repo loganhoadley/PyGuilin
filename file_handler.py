@@ -83,7 +83,8 @@ def long_to_wide(input_file):
     :return: A wide-form table stored in a dictionary.
     """
     # Dictionary to store csv data in
-    wide_data = {}
+    wide_dict = {}
+    wide_data = []
     # List to store all the data sources for headers
     sources = ['Time']
     with open(input_file, encoding='utf-8-sig') as csv_file:
@@ -106,11 +107,11 @@ def long_to_wide(input_file):
                 if source not in sources:
                     sources.append(source)
                 # If the timestamp isn't in the dictionary yet, insert it as a new key.
-                if time_stamp not in wide_data:
-                    wide_data[time_stamp] = {'Time': time_stamp, source: value}
+                if time_stamp not in wide_dict:
+                    wide_dict[time_stamp] = {'Time': time_stamp, source: float(value)}
                 else:
                     # If it exists already, update the value of the source in this row.
-                    wide_data[time_stamp][source] = value
+                    wide_dict[time_stamp][source] = float(value)
     with open('test.csv', 'w', newline='') as output_file:
         writer = csv.DictWriter(output_file, fieldnames=sources)
         # Headers are defined at the beginning of the script.
@@ -119,14 +120,18 @@ def long_to_wide(input_file):
         # Initialized to blank spaces.
         last_known_values = {}
         for s in sources:
-            last_known_values[s] = ''
+            last_known_values[s] = None
         # Traverse the values in chronological order
-        for key in sorted(wide_data.keys()):
+        for key in sorted(wide_dict.keys()):
             # For each header, check if a value exists at that location, if not, then set it to last known value.
             for s in sources:
-                if s not in wide_data[key] or wide_data[key][s] == '':
-                    wide_data[key][s] = last_known_values[s]
+                if s not in wide_dict[key] or wide_dict[key][s] == '':
+                    if last_known_values[s] is None:
+                        wide_dict[key][s] = None
+                    else:
+                        wide_dict[key][s] = float(last_known_values[s])
                 # If value exists at this location, update last known value.
                 else:
-                    last_known_values[s] = wide_data[key][s]
+                    last_known_values[s] = wide_dict[key][s]
+            wide_data.append(wide_dict[key])
     return wide_data, sources

@@ -7,23 +7,17 @@ import matplotlib.pyplot as plt
 from tkinter import *
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
-from file_handler import is_wide_form, file_correct
+from file_handler import is_wide_form, file_correct, long_to_wide
 # TODO: Needs to be cleaned up to conform to PEP-8 Standards.
 sns.set_theme(color_codes=True)
 
 
 def openfile():
-    # TODO: Retool this to utilize long_to_wide().
     global filepath, headers, firstRun, csv
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
-    csv = pd.read_csv(filepath)
-    formatted = is_wide_form(csv)
-    if not formatted:
-        file_correct(csv)
-        print("Done.")
-        return
-    headers = list(csv.columns)
+    wide_data, headers = long_to_wide(filepath)
+    csv = pd.DataFrame.from_records(wide_data)
     if firstRun:
         startLabel.pack_forget()
         firstRun = False
@@ -107,7 +101,7 @@ def graph(file, xval, yval, limit, robust, order):
 # creates a figure containing the graph, type figure
 def create_figure(file, xaxis, yaxis, robust, order, log):
     f, dummy = plt.subplots(figsize=(6, 6))
-    sns.regplot(x=xaxis, y=yaxis, data=file, robust=robust, order=order, logx=log)
+    sns.regplot(x=xaxis, y=yaxis, data=file, robust=robust, order=order, logx=log, ci=68)
     return f
 
 def graph_outliers(file, xaxis, yaxis, order):
