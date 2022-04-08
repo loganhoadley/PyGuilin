@@ -10,7 +10,6 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 from file_handler import is_wide_form, file_correct, long_to_wide
 
 # TODO:
-#  Second pass on logarithmic function, and expanding order options to a numeric setting.
 #  Needs to be cleaned up to conform to PEP-8 Standards.
 sns.set_theme(color_codes=True)
 
@@ -47,23 +46,24 @@ def draw_options():
     root.title(filepath)
     buttonframe = Frame(root)
     buttonframe.pack(side=LEFT)
-    clicked1 = StringVar()
-    clicked1.set("Parameter 1")
-    clicked2 = StringVar()
-    clicked2.set("Parameter 2")
+    xaxis = StringVar()
+    xaxis.set("Parameter 1")
+    yaxis = StringVar()
+    yaxis.set("Parameter 2")
     windowframe = Frame(root)
     windowframe.pack(side=RIGHT)
-    drop1 = OptionMenu(buttonframe, clicked1, *headers)
+    drop1 = OptionMenu(buttonframe, xaxis, *headers)
     drop1.pack(side=TOP)
-    drop2 = OptionMenu(buttonframe, clicked2, *headers)
+    drop2 = OptionMenu(buttonframe, yaxis, *headers)
     drop2.pack(side=TOP)
     sliderlabel = Label(buttonframe, text="Width deviation limit in\n tenths of millimeters: ")
     sliderlabel.pack(side=TOP)
     limit = DoubleVar()
     robust = BooleanVar()
     robust.set(False)
-    order = IntVar()
-    order.set(1)
+    order = StringVar()
+    islog = BooleanVar()
+    islog.set=(False)
 
     slider = Scale(buttonframe, from_=0, to=75, orient=HORIZONTAL, variable=limit)
     slider.pack(side=TOP)
@@ -73,21 +73,25 @@ def draw_options():
 
     robustcheck = tk.Checkbutton(buttonframe, text="Robust Analysis", variable=robust, onvalue=True, offvalue=False)
     robustcheck.pack(side=TOP)
-    graphbutton = Button(buttonframe, text="Generate",
-                         command=lambda: generate_graph(csv, clicked1.get(), clicked2.get(),
-                                                        limit.get(),robust.get(), order.get()))
-    graphbutton.pack(side=BOTTOM)
-    outlierbutton = Button(buttonframe, text="Graph Outliers", command=lambda: graph_outliers(csv, clicked1.get(),
-                                                                                              clicked2.get(),
-                                                                                              order.get()))
-    outlierbutton.pack(side=BOTTOM)
-    strucbutton1 = Radiobutton(buttonframe, text="Linear Approximation", variable=order, value=1)
-    strucbutton1.pack()
-    strucbutton2 = Radiobutton(buttonframe, text="Quadratic Approximation", variable=order, value=2)
-    strucbutton2.pack()
-    logbutton = Radiobutton(buttonframe, text="Logarithmic Approximation", variable=order, value=999)
-    logbutton.pack()
 
+    graphbutton = Button(buttonframe, text="Generate",
+                         command=lambda: generate_graph(csv, xaxis.get(), yaxis.get(),
+                                                        limit.get(),robust.get(), islog.get(), order.get()))
+    graphbutton.pack(side=BOTTOM)
+    # outlier distributions are not compatible with a logarithmic function, so no argument is passed.
+    outlierbutton = Button(buttonframe, text="Graph Outliers", command=lambda: graph_outliers(csv, xaxis.get(),
+                                                                                              yaxis.get(),
+                                                                                              order.get(), islog.get()))
+    outlierbutton.pack(side=BOTTOM)
+    # replace linear and quadtratic with a user-inputtable number, return and raise error message if
+    # something other than a number is given.
+    logtext=tk.Label(buttonframe, text="Order of approximation:")
+    logtext.pack()
+    logcheckbox = tk.Checkbutton(buttonframe, text="Logarithmic Approximation (overrides order!)", variable=islog,
+                                 onvalue=True, offvalue=False)
+    logcheckbox.pack(side=BOTTOM)
+    orderinput = tk.Spinbox(buttonframe, from_=1, to=1000, textvariable=order, wrap=False)
+    orderinput.pack()
 
 def clear_screen():
     """
@@ -99,7 +103,7 @@ def clear_screen():
     buttonframe.pack_forget()
 
 
-def generate_graph(dataframe, xaxis, yaxis, limit, isrobust, order):
+def generate_graph(dataframe, xaxis, yaxis, limit, isrobust, islog, order):
     """
     Called when user presses 'Generate Graph," creates a toplevel window and populates it with the desired graph.
     :param dataframe: Pandas dataframe constructed from the user-selected .csv file in wide-form.
@@ -107,17 +111,16 @@ def generate_graph(dataframe, xaxis, yaxis, limit, isrobust, order):
     :param yaxis: Selected parameter 2 that populates the y-axis. Intended behavior uses tread width as control variable.
     :param limit: Desired limit for width tolerance, determining the height of a horizontal line to be drawn for reference.
     :param isrobust: Boolean, determines whether regplot ignores the effect of extreme outlying data points.
+    :param islog: Boolean, determines if logarithmic analysis is performed. Overwrites order.
     :param order: Desired order of curve to fit to data set. If > 500, sets log = True for logarithmic approximation.
     :return:
     """
     global canvas
+    order=int(order)
     graphwindow = Toplevel(height=900, width=1000)
-    if order > 500:
-        log = True
-        order = 1
-    else:
-        log = False
-    fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, log)
+    if islog:
+        order = 1 # order must be 1, the arguments are not compatible.
+    fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog)
     if limit != 0:
         plt.axhline(y=(limit / 1000), color='r', linestyle='-')
     canvas = FigureCanvasTkAgg(fig, master=graphwindow)
@@ -145,7 +148,7 @@ def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog):
     return f
 
 
-def graph_outliers(dataframe, xaxis, yaxis, order):
+def graph_outliers(dataframe, xaxis, yaxis, order, islog):
     """
     Called when user presses the "Graph Outliers" button. Handles the creation of the window for the generated
     graph to populate, processing of related arguments, and calls outlier_figure() to create that graph.
@@ -153,11 +156,13 @@ def graph_outliers(dataframe, xaxis, yaxis, order):
     :param xaxis: x-axis representing a column object in dataframe. Variable of study.
     :param yaxis: y-axis representing column object in dataframe. Expected to be tread width measurement.
     :param order: desired order of the fit regression curve.
+    :param islog: Boolean, set to 1 if true. Less important in graphing outliers, but shares arg with the full graph.
     :return:
     """
+    order=int(order)
     graphwindow = Toplevel(height=900, width=1000)
-    if order > 500:
-        order = 1
+    if islog==True:
+        order=1 #sets order to 1, to account for arbitrary order.
 
     fig = outlier_figure(dataframe, xaxis, yaxis, order)
     canvas = FigureCanvasTkAgg(fig, master=graphwindow)
