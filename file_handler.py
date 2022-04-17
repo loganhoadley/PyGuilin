@@ -95,7 +95,7 @@ def long_to_wide(input_file):
                 # Unfortunately, the milliseconds are often truncated such that Python does not recognize the stamp.
                 # When this happens, a ValueError is caught and passed to a corrective function.
                 try:
-                    time_stamp = datetime.fromisoformat(row['Time'])
+                    time_stamp = datetime.fromisoformat(row['Time']) # excel code is yyyy-mm-dd hh:mm:ss
                     time_stamp = time_stamp.isoformat(sep=' ', timespec='seconds')
                 except ValueError:
                     time_stamp = correct_timestamp(row['Time'])

@@ -1,14 +1,18 @@
-# matplotlib.pyplot.ion() enables interactive mode, which should serve the final product
+"""
+Name: main.py
+Authors: Logan Hoadley
+
+This file intializes the tkinter environment, and contains functions related to the GUI, graph creation, and options.
+"""
 from tkinter import filedialog
 import tkinter as tk
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 from tkinter import *
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 from file_handler import is_wide_form, file_correct, long_to_wide
-
+#from matplotlib.figure import Figure
 # TODO:
 #  Needs to be cleaned up to conform to PEP-8 Standards.
 sns.set_theme(color_codes=True)
@@ -56,17 +60,23 @@ def draw_options():
     drop1.pack(side=TOP)
     drop2 = OptionMenu(buttonframe, yaxis, *headers)
     drop2.pack(side=TOP)
-    widthlabel = Label(buttonframe, text="Nominal Tread Width (mm): ")
-    widthlabel.pack(side=TOP)
+
+
     width = StringVar()
     robust = BooleanVar()
     robust.set(False)
     order = StringVar()
     islog = BooleanVar()
+    range=StringVar()
     islog.set=(False)
-
-    widthinput = tk.Spinbox(buttonframe, from_=1, to=500, textvariable=width, wrap=False)
+    widthlabel = Label(buttonframe, text="Nominal Tread Width (mm): ")
+    widthlabel.pack(side=TOP)
+    widthinput = tk.Spinbox(buttonframe, from_=0, to=750, textvariable=width, wrap=False)
     widthinput.pack()
+    devlabel = Label(buttonframe, text="Error allowed (mm): ")
+    devlabel.pack()
+    widthdeviation = tk.Spinbox(buttonframe, from_=1, to=10, textvariable=range, wrap=False)
+    widthdeviation.pack()
     # slider = Scale(buttonframe, from_=0, to=75, orient=HORIZONTAL, variable=limit)
     # slider.pack(side=TOP)
     # maybe replace sider with an input field, so user can just type in a value
@@ -78,7 +88,7 @@ def draw_options():
 
     graphbutton = Button(buttonframe, text="Generate",
                          command=lambda: generate_graph(csv, xaxis.get(), yaxis.get(),
-                                                        width.get(),robust.get(), islog.get(), order.get()))
+                                                        width.get(),robust.get(), islog.get(), order.get(), range.get()))
     graphbutton.pack(side=BOTTOM)
     # outlier distributions are not compatible with a logarithmic function, so no argument is passed.
     outlierbutton = Button(buttonframe, text="Graph Outliers", command=lambda: graph_outliers(csv, xaxis.get(),
@@ -105,7 +115,7 @@ def clear_screen():
     buttonframe.pack_forget()
 
 
-def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order):
+def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range):
     """
     Called when user presses 'Generate Graph," creates a toplevel window and populates it with the desired graph.
     :param dataframe: Pandas dataframe constructed from the user-selected .csv file in wide-form.
@@ -115,25 +125,29 @@ def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order):
     :param isrobust: Boolean, determines whether regplot ignores the effect of extreme outlying data points.
     :param islog: Boolean, determines if logarithmic analysis is performed. Overwrites order.
     :param order: Desired order of curve to fit to data set. If > 500, sets log = True for logarithmic approximation.
+    :param range: Desired +/- variation allowed for visualization.
     :return:
     """
     global canvas
     width=int(width)
     order=int(order)
+    range=int(range)
+    print(type(xaxis))
     graphwindow = Toplevel(height=900, width=1000)
+    xjitter=dataframe[xaxis].mean()
     if islog:
         order = 1 # order must be 1, the arguments are not compatible.
-    fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog)
+    fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog,xjitter)
     if width != 0:
-        plt.axhline(y=(width + 4), color='r', linestyle='-')
-        plt.axhline(y=(width - 4), color='r', linestyle='-')
+        plt.axhline(y=(width + range), color='r', linestyle='-')
+        plt.axhline(y=(width - range), color='r', linestyle='-')
     canvas = FigureCanvasTkAgg(fig, master=graphwindow)
     canvas.draw()
     canvas.get_tk_widget().pack()
     button = tk.Button(graphwindow, text="Close", command=graphwindow.destroy)
     button.pack()
 
-def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog):
+def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog, xjitter):
     """
     Called by generate_graph() and .
     Generates a seaborn regression plot figure for use in a canvas, and to display to the user. This figure uses the
@@ -145,10 +159,12 @@ def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog):
     :param isrobust: Boolean, determines whether regplot ignores the effect of extreme outlying data points.
     :param order: Desired order of curve to fit to data set. Overridden by islog = True, as the two are exclusionary.
     :param islog: Boolean, determines if curve fit uses logarithmic approximation. Overrides order number if set to True.
+    :param xjitter: float, contains the mean of the selected x axis. Prevents the "stacking" of data by slightly shifting their values in visaulization only.
     :return f: Generated matplotlib.figure with a regression plot fit to the provided data.
     """
     f, dummy = plt.subplots(figsize=(6, 6))
-    sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=99,x_jitter=0.005, y_jitter=0.05)
+    jitterval=0.0005*xjitter
+    sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=99,x_jitter=jitterval, y_jitter=0.05)
     return f
 
 
