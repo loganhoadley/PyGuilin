@@ -56,17 +56,19 @@ def draw_options():
     drop1.pack(side=TOP)
     drop2 = OptionMenu(buttonframe, yaxis, *headers)
     drop2.pack(side=TOP)
-    sliderlabel = Label(buttonframe, text="Width deviation limit in\n tenths of millimeters: ")
-    sliderlabel.pack(side=TOP)
-    limit = DoubleVar()
+    widthlabel = Label(buttonframe, text="Nominal Tread Width (mm): ")
+    widthlabel.pack(side=TOP)
+    width = StringVar()
     robust = BooleanVar()
     robust.set(False)
     order = StringVar()
     islog = BooleanVar()
     islog.set=(False)
 
-    slider = Scale(buttonframe, from_=0, to=75, orient=HORIZONTAL, variable=limit)
-    slider.pack(side=TOP)
+    widthinput = tk.Spinbox(buttonframe, from_=1, to=500, textvariable=width, wrap=False)
+    widthinput.pack()
+    # slider = Scale(buttonframe, from_=0, to=75, orient=HORIZONTAL, variable=limit)
+    # slider.pack(side=TOP)
     # maybe replace sider with an input field, so user can just type in a value
     # add: button or tickbox to graph 2nd order
     # add: entry for confidence interval
@@ -76,7 +78,7 @@ def draw_options():
 
     graphbutton = Button(buttonframe, text="Generate",
                          command=lambda: generate_graph(csv, xaxis.get(), yaxis.get(),
-                                                        limit.get(),robust.get(), islog.get(), order.get()))
+                                                        width.get(),robust.get(), islog.get(), order.get()))
     graphbutton.pack(side=BOTTOM)
     # outlier distributions are not compatible with a logarithmic function, so no argument is passed.
     outlierbutton = Button(buttonframe, text="Graph Outliers", command=lambda: graph_outliers(csv, xaxis.get(),
@@ -103,26 +105,28 @@ def clear_screen():
     buttonframe.pack_forget()
 
 
-def generate_graph(dataframe, xaxis, yaxis, limit, isrobust, islog, order):
+def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order):
     """
     Called when user presses 'Generate Graph," creates a toplevel window and populates it with the desired graph.
     :param dataframe: Pandas dataframe constructed from the user-selected .csv file in wide-form.
     :param xaxis: Selected parameter 1 that populates the x-axis. Variable of study.
     :param yaxis: Selected parameter 2 that populates the y-axis. Intended behavior uses tread width as control variable.
-    :param limit: Desired limit for width tolerance, determining the height of a horizontal line to be drawn for reference.
+    :param width: Nominal width for tread, passed as a string.
     :param isrobust: Boolean, determines whether regplot ignores the effect of extreme outlying data points.
     :param islog: Boolean, determines if logarithmic analysis is performed. Overwrites order.
     :param order: Desired order of curve to fit to data set. If > 500, sets log = True for logarithmic approximation.
     :return:
     """
     global canvas
+    width=int(width)
     order=int(order)
     graphwindow = Toplevel(height=900, width=1000)
     if islog:
         order = 1 # order must be 1, the arguments are not compatible.
     fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog)
-    if limit != 0:
-        plt.axhline(y=(limit / 1000), color='r', linestyle='-')
+    if width != 0:
+        plt.axhline(y=(width + 4), color='r', linestyle='-')
+        plt.axhline(y=(width - 4), color='r', linestyle='-')
     canvas = FigureCanvasTkAgg(fig, master=graphwindow)
     canvas.draw()
     canvas.get_tk_widget().pack()
@@ -144,7 +148,7 @@ def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog):
     :return f: Generated matplotlib.figure with a regression plot fit to the provided data.
     """
     f, dummy = plt.subplots(figsize=(6, 6))
-    sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=95)
+    sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=99,x_jitter=0.005, y_jitter=0.05)
     return f
 
 
