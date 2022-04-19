@@ -51,9 +51,9 @@ def draw_options():
     buttonframe = Frame(root)
     buttonframe.pack(side=LEFT)
     xaxis = StringVar()
-    xaxis.set("Parameter 1")
+    xaxis.set("X-axis")
     yaxis = StringVar()
-    yaxis.set("Parameter 2")
+    yaxis.set("Y-axis")
     windowframe = Frame(root)
     windowframe.pack(side=RIGHT)
     drop1 = OptionMenu(buttonframe, xaxis, *headers)
@@ -69,41 +69,35 @@ def draw_options():
     islog = BooleanVar()
     range=StringVar()
     islog.set=(False)
-    widthlabel = Label(buttonframe, text="Nominal Tread Width (mm): ")
+    widthlabel = Label(buttonframe, text="Target Tread Width (mm): ")  # rename this option "tread deviation allowed" if absolute measure becomes available
     widthlabel.pack(side=TOP)
     widthinput = tk.Spinbox(buttonframe, from_=0, to=750, textvariable=width, wrap=False)
     widthinput.pack()
     devlabel = Label(buttonframe, text="Error allowed (mm): ")
     devlabel.pack()
-    widthdeviation = tk.Spinbox(buttonframe, from_=1, to=10, textvariable=range, wrap=False)
+    widthdeviation = tk.Spinbox(buttonframe, from_=1, to=10, textvariable=range, wrap=False)  # remove this option if absolute measure becomes available
     widthdeviation.pack()
-    # slider = Scale(buttonframe, from_=0, to=75, orient=HORIZONTAL, variable=limit)
-    # slider.pack(side=TOP)
-    # maybe replace sider with an input field, so user can just type in a value
-    # add: button or tickbox to graph 2nd order
-    # add: entry for confidence interval
-
-    robustcheck = tk.Checkbutton(buttonframe, text="Robust Analysis", variable=robust, onvalue=True, offvalue=False)
-    robustcheck.pack(side=TOP)
+    ordertext=tk.Label(buttonframe, text="Order of approximation:")
+    ordertext.pack()
+    orderinput = tk.Spinbox(buttonframe, from_=1, to=1000, textvariable=order, wrap=False)
+    orderinput.pack()
 
     graphbutton = Button(buttonframe, text="Generate",
                          command=lambda: generate_graph(csv, xaxis.get(), yaxis.get(),
-                                                        width.get(),robust.get(), islog.get(), order.get(), range.get()))
+                                                        width.get(),robust.get(), islog.get(), order.get(), range.get()))  # remove range.get from this and generate_graph() if absolute measure becomes available.
     graphbutton.pack(side=BOTTOM)
     # outlier distributions are not compatible with a logarithmic function, so no argument is passed.
     outlierbutton = Button(buttonframe, text="Graph Outliers", command=lambda: graph_outliers(csv, xaxis.get(),
                                                                                               yaxis.get(),
                                                                                               order.get(), islog.get()))
     outlierbutton.pack(side=BOTTOM)
-    # replace linear and quadtratic with a user-inputtable number, return and raise error message if
-    # something other than a number is given.
-    logtext=tk.Label(buttonframe, text="Order of approximation:")
-    logtext.pack()
+
     logcheckbox = tk.Checkbutton(buttonframe, text="Logarithmic Approximation (overrides order!)", variable=islog,
                                  onvalue=True, offvalue=False)
     logcheckbox.pack(side=BOTTOM)
-    orderinput = tk.Spinbox(buttonframe, from_=1, to=1000, textvariable=order, wrap=False)
-    orderinput.pack()
+    robustcheck = tk.Checkbutton(buttonframe, text="Robust Analysis (overrides order!)", variable=robust, onvalue=True, offvalue=False)
+    robustcheck.pack(side=BOTTOM)
+
 
 def clear_screen():
     """
@@ -132,15 +126,18 @@ def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range
     width=int(width)
     order=int(order)
     range=int(range)
-    print(type(xaxis))
     graphwindow = Toplevel(height=900, width=1000)
     xjitter=dataframe[xaxis].mean()
-    if islog:
+    if islog or isrobust:
         order = 1 # order must be 1, the arguments are not compatible.
     fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog,xjitter)
     if width != 0:
         plt.axhline(y=(width + range), color='r', linestyle='-')
         plt.axhline(y=(width - range), color='r', linestyle='-')
+    #for use if tread deviation measure becomes available: (allows for large scale analysis)
+    #if width!=0:
+    #    plt.axhline(y=width, color='r', linestyle ='-')
+    #    plt.axhline(y=*(-1*width), color='r', linestyle='-')
     canvas = FigureCanvasTkAgg(fig, master=graphwindow)
     canvas.draw()
     canvas.get_tk_widget().pack()
@@ -163,8 +160,8 @@ def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog, xjitter):
     :return f: Generated matplotlib.figure with a regression plot fit to the provided data.
     """
     f, dummy = plt.subplots(figsize=(6, 6))
-    jitterval=0.0005*xjitter
-    sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=99,x_jitter=jitterval, y_jitter=0.05)
+    jitterval=0.0001*xjitter
+    sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=99,x_jitter=jitterval, y_jitter=0.02)
     return f
 
 
