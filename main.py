@@ -25,10 +25,11 @@ def openfile():
     the screen with relevant choices based on the file.
     :return:
     """
-    global filepath, headers, firstRun, csv
+    global filepath, headers, recipes, firstRun, csv
+
     filepath = filedialog.askopenfilename(initialdir="%USERPROFILE%/Downloads",
                                           filetypes=(("Comma Separated Value Lists", "*.csv"), ("All Files", "*.*")))
-    wide_data, headers = long_to_wide(filepath)
+    wide_data, headers, recipes= long_to_wide(filepath)
     csv = pd.DataFrame.from_records(wide_data)
     if firstRun:
         startLabel.pack_forget()
@@ -54,13 +55,21 @@ def draw_options():
     xaxis.set("X-axis")
     yaxis = StringVar()
     yaxis.set("Y-axis")
+    recipename = StringVar()
+    recipename.set("NULL")
+    headers.remove("Time")
+    if ("TREAD_RECIPE" in headers):
+        headers.remove("TREAD_RECIPE")
+        recipes.append("None")
+        recipename.set("Tread Recipe")
+        recipedrop = OptionMenu(buttonframe, recipename, *recipes)
+        recipedrop.pack(side=TOP)
     windowframe = Frame(root)
     windowframe.pack(side=RIGHT)
     drop1 = OptionMenu(buttonframe, xaxis, *headers)
     drop1.pack(side=TOP)
     drop2 = OptionMenu(buttonframe, yaxis, *headers)
     drop2.pack(side=TOP)
-
 
     width = StringVar()
     robust = BooleanVar()
@@ -84,13 +93,8 @@ def draw_options():
 
     graphbutton = Button(buttonframe, text="Generate",
                          command=lambda: generate_graph(csv, xaxis.get(), yaxis.get(),
-                                                        width.get(),robust.get(), islog.get(), order.get(), range.get()))  # remove range.get from this and generate_graph() if absolute measure becomes available.
+                                                        width.get(),robust.get(), islog.get(), order.get(), range.get(), recipename.get()))  # remove range.get from this and generate_graph() if absolute measure becomes available.
     graphbutton.pack(side=BOTTOM)
-    # outlier distributions are not compatible with a logarithmic function, so no argument is passed.
-    outlierbutton = Button(buttonframe, text="Graph Outliers", command=lambda: graph_outliers(csv, xaxis.get(),
-                                                                                              yaxis.get(),
-                                                                                              order.get(), islog.get()))
-    outlierbutton.pack(side=BOTTOM)
 
     logcheckbox = tk.Checkbutton(buttonframe, text="Logarithmic Approximation (overrides order!)", variable=islog,
                                  onvalue=True, offvalue=False)
@@ -109,7 +113,7 @@ def clear_screen():
     buttonframe.pack_forget()
 
 
-def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range):
+def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range, recipe):
     """
     Called when user presses 'Generate Graph," creates a toplevel window and populates it with the desired graph.
     :param dataframe: Pandas dataframe constructed from the user-selected .csv file in wide-form.
@@ -120,6 +124,7 @@ def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range
     :param islog: Boolean, determines if logarithmic analysis is performed. Overwrites order.
     :param order: Desired order of curve to fit to data set. If > 500, sets log = True for logarithmic approximation.
     :param range: Desired +/- variation allowed for visualization.
+    :param recipe: String, tread recipe for filtering, default is NULL. Behavior with NULL and none is identical
     :return:
     """
     global canvas
@@ -128,9 +133,18 @@ def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range
     range=int(range)
     graphwindow = Toplevel(height=900, width=1000)
     xjitter=dataframe[xaxis].mean()
+
     if islog or isrobust:
         order = 1 # order must be 1, the arguments are not compatible.
-    fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog,xjitter)
+
+    if recipe!="NULL" and recipe!="None":
+        print("condition called, recipe is", recipe)
+        print("type is: ", type(recipe))
+        f_data = dataframe[dataframe["TREAD_RECIPE"] == recipe]
+        fig = create_figure(f_data, xaxis, yaxis, isrobust, order, islog, xjitter)
+    else:
+        print(dataframe)
+        fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog,xjitter)
     if width != 0:
         plt.axhline(y=(width + range), color='r', linestyle='-')
         plt.axhline(y=(width - range), color='r', linestyle='-')
@@ -138,6 +152,7 @@ def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range
     #if width!=0:
     #    plt.axhline(y=width, color='r', linestyle ='-')
     #    plt.axhline(y=*(-1*width), color='r', linestyle='-')
+
     canvas = FigureCanvasTkAgg(fig, master=graphwindow)
     canvas.draw()
     canvas.get_tk_widget().pack()
@@ -164,43 +179,6 @@ def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog, xjitter):
     sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=99,x_jitter=jitterval, y_jitter=0.02)
     return f
 
-
-def graph_outliers(dataframe, xaxis, yaxis, order, islog):
-    """
-    Called when user presses the "Graph Outliers" button. Handles the creation of the window for the generated
-    graph to populate, processing of related arguments, and calls outlier_figure() to create that graph.
-    :param dataframe: Pandas dataframe as assembled from the provided .csv, in wide form.
-    :param xaxis: x-axis representing a column object in dataframe. Variable of study.
-    :param yaxis: y-axis representing column object in dataframe. Expected to be tread width measurement.
-    :param order: desired order of the fit regression curve.
-    :param islog: Boolean, set to 1 if true. Less important in graphing outliers, but shares arg with the full graph.
-    :return:
-    """
-    order=int(order)
-    graphwindow = Toplevel(height=900, width=1000)
-    if islog==True:
-        order=1 #sets order to 1, to account for arbitrary order.
-
-    fig = outlier_figure(dataframe, xaxis, yaxis, order)
-    canvas = FigureCanvasTkAgg(fig, master=graphwindow)
-    canvas.draw()
-    canvas.get_tk_widget().pack()
-    button = tk.Button(graphwindow, text="Close", command=graphwindow.destroy)
-    button.pack()
-
-
-def outlier_figure(dataframe, xaxis, yaxis, order):
-    """
-    Generates a relevant figure based on user selection, displaying outliers in the provided data set.
-    :param dataframe: Pandas dataframe as assembled from the provided .csv, in wide form.
-    :param xaxis: x-axis representing a column object in dataframe. Variable of study.
-    :param yaxis: y-axis representing column object in dataframe. Expected to be tread width measurement.
-    :param order: desired order of  fit regression curve.
-    :return f: generated matplotlib.figure containing the outlying data points.
-    """
-    f, dummy = plt.subplots(figsize=(6, 6))
-    sns.residplot(x=xaxis, y=yaxis, data=dataframe, lowess=True, order=order)
-    return f
 
 # Main
 firstRun = True

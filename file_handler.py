@@ -80,13 +80,15 @@ def long_to_wide(input_file):
     This dictionary is structured to be interpreted as a CSV table.
     :type input_file: basestring
     :param input_file: The name of the csv file, as a string.
-    :return: A wide-form table stored in a dictionary.
+    :return: A wide-form table stored in a dictionary, as well as lists for headers and recipes.
     """
     # Dictionary to store csv data in
     wide_dict = {}
     wide_data = []
     # List to store all the data sources for headers
     sources = ['Time']
+    recipes = []
+
     with open(input_file, encoding='utf-8-sig') as csv_file:
         reader = csv.DictReader(csv_file)
         for row in reader:
@@ -111,27 +113,32 @@ def long_to_wide(input_file):
                     wide_dict[time_stamp] = {'Time': time_stamp, source: float(value)}
                 else:
                     # If it exists already, update the value of the source in this row.
-                    wide_dict[time_stamp][source] = float(value)
-    with open('test.csv', 'w', newline='') as output_file:
-        writer = csv.DictWriter(output_file, fieldnames=sources)
-        # Headers are defined at the beginning of the script.
-        writer.writeheader()
-        # Dictionary of last known values, for filling in the gaps in the data.
-        # Initialized to blank spaces.
-        last_known_values = {}
+                    try:
+                        wide_dict[time_stamp][source] = float(value)
+                    except ValueError:
+                        wide_dict[time_stamp][source] = str(value)
+    # Dictionary of last known values, for filling in the gaps in the data.
+    # Initialized to blank spaces.
+    last_known_values = {}
+    for s in sources:
+        last_known_values[s] = None
+    # Traverse the values in chronological order
+    for key in sorted(wide_dict.keys()):
+        # For each header, check if a value exists at that location, if not, then set it to last known value.
         for s in sources:
-            last_known_values[s] = None
-        # Traverse the values in chronological order
-        for key in sorted(wide_dict.keys()):
-            # For each header, check if a value exists at that location, if not, then set it to last known value.
-            for s in sources:
-                if s not in wide_dict[key] or wide_dict[key][s] == '':
-                    if last_known_values[s] is None:
-                        wide_dict[key][s] = None
-                    else:
-                        wide_dict[key][s] = float(last_known_values[s])
-                # If value exists at this location, update last known value.
+            if s not in wide_dict[key] or wide_dict[key][s] == '':
+                if last_known_values[s] is None:
+                    wide_dict[key][s] = None
                 else:
-                    last_known_values[s] = wide_dict[key][s]
-            wide_data.append(wide_dict[key])
-    return wide_data, sources
+                    try:
+                        wide_dict[key][s] = float(last_known_values[s])
+                    except ValueError:
+                        wide_dict[key][s] = str(last_known_values[s])
+            # If value exists at this location, update last known value.
+            else:
+                last_known_values[s] = wide_dict[key][s]
+        wide_data.append(wide_dict[key])
+        if s=="TREAD_RECIPE":
+            if wide_dict[key][s] is not None and wide_dict[key][s] not in recipes:
+                recipes.append(wide_dict[key][s])
+    return wide_data, sources, recipes
