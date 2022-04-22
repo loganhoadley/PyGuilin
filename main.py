@@ -14,8 +14,9 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 from file_handler import is_wide_form, file_correct, long_to_wide
 #from matplotlib.figure import Figure
 # TODO:
-#  Needs to be cleaned up to conform to PEP-8 Standards.
+#  Replacing jitter values with actual values, removing that functionality and giving true visuals
 sns.set_theme(color_codes=True)
+
 
 
 def openfile():
@@ -136,14 +137,11 @@ def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range
 
     if islog or isrobust:
         order = 1 # order must be 1, the arguments are not compatible.
-
     if recipe!="NULL" and recipe!="None":
-        print("condition called, recipe is", recipe)
-        print("type is: ", type(recipe))
+
         f_data = dataframe[dataframe["TREAD_RECIPE"] == recipe]
         fig = create_figure(f_data, xaxis, yaxis, isrobust, order, islog, xjitter)
     else:
-        print(dataframe)
         fig = create_figure(dataframe, xaxis, yaxis, isrobust, order, islog,xjitter)
     if width != 0:
         plt.axhline(y=(width + range), color='r', linestyle='-')
