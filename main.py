@@ -2,7 +2,7 @@
 Name: main.py
 Authors: Logan Hoadley
 
-This file intializes the tkinter environment, and contains functions related to the GUI, graph creation, and options.
+This file initializes the tkinter environment, and contains functions related to the GUI, graph creation, and options.
 """
 from tkinter import filedialog
 import tkinter as tk
@@ -13,8 +13,6 @@ from tkinter import *
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 from file_handler import is_wide_form, file_correct, long_to_wide
 #from matplotlib.figure import Figure
-# TODO:
-#  Replacing jitter values with actual values, removing that functionality and giving true visuals
 sns.set_theme(color_codes=True)
 
 
@@ -63,12 +61,18 @@ def draw_options():
         headers.remove("TREAD_RECIPE")
         recipes.append("None")
         recipename.set("Tread Recipe")
+        recipelabel = tk.Label(buttonframe, text="Filter by Tread Recipe: ")
+        recipelabel.pack()
         recipedrop = OptionMenu(buttonframe, recipename, *recipes)
         recipedrop.pack(side=TOP)
     windowframe = Frame(root)
     windowframe.pack(side=RIGHT)
+    drop1label = tk.Label(buttonframe, text="X-Axis Parameter:")
+    drop1label.pack()
     drop1 = OptionMenu(buttonframe, xaxis, *headers)
     drop1.pack(side=TOP)
+    drop2label = tk.Label(buttonframe, text="Y-Axis Parameter: ")
+    drop2label.pack()
     drop2 = OptionMenu(buttonframe, yaxis, *headers)
     drop2.pack(side=TOP)
 
@@ -133,8 +137,8 @@ def generate_graph(dataframe, xaxis, yaxis, width, isrobust, islog, order, range
     order=int(order)
     range=int(range)
     graphwindow = Toplevel(height=900, width=1000)
-    xjitter=dataframe[xaxis].mean()
-
+    # xjitter=dataframe[xaxis].mean() #used to stop values from majorly overlapping, removing for when data is sorted and more fine measures are available.
+    xjitter=0
     if islog or isrobust:
         order = 1 # order must be 1, the arguments are not compatible.
     if recipe!="NULL" and recipe!="None":
@@ -173,7 +177,8 @@ def create_figure(dataframe, xaxis, yaxis, isrobust, order, islog, xjitter):
     :return f: Generated matplotlib.figure with a regression plot fit to the provided data.
     """
     f, dummy = plt.subplots(figsize=(6, 6))
-    jitterval=0.0001*xjitter
+    # jitterval=0.0001*xjitter
+    jitterval=0
     sns.regplot(x=xaxis, y=yaxis, data=dataframe, robust=isrobust, order=order, logx=islog, ci=99,x_jitter=jitterval, y_jitter=0.02)
     return f
 
